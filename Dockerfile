@@ -7,7 +7,7 @@ RUN [ "cross-build-start" ]
 RUN apt-get update \
     && apt-get install -y dnsmasq wireless-tools dbus xterm \
                           v4l-utils nano bc wget unzip netcat alsa-utils build-essential git usbutils openssh-server \
-                          python3 python3-gi \
+                          python3 python3-gi python3-pip python3-setuptools \
                           gstreamer1.0-tools gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad \
                           gstreamer1.0-plugins-ugly gstreamer1.0-omx gstreamer1.0-alsa \
                           autoconf automake libtool pkg-config \
@@ -20,6 +20,14 @@ RUN apt-get update \
 ENV LANG C.UTF-8
 
 WORKDIR /usr/src/app
+
+# Install FFMPEG Python bindings
+RUN pip3 install wheel
+RUN pip3 install ffmpeg-python
+
+# Setup gst-rpicamsrc
+RUN git clone https://github.com/thaytan/gst-rpicamsrc.git
+RUN cd gst-rpicamsrc && ./autogen.sh && make && make install
 
 # Build FFMPEG
 RUN cd ~ \
