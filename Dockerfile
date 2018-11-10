@@ -6,7 +6,7 @@ RUN [ "cross-build-start" ]
 RUN apt-get update \
     && apt-get install -y dnsmasq wireless-tools dbus xterm \
                           v4l-utils nano bc wget unzip netcat alsa-utils build-essential git usbutils openssh-server \
-                          python3 python3-gi python3-matplotlib python3-opencv python3-matplotlib \
+                          python3 python3-gi python3-matplotlib python3-matplotlib \
                           gstreamer1.0-tools gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad \
                           gstreamer1.0-plugins-ugly gstreamer1.0-omx gstreamer1.0-alsa \
                           autoconf automake libtool pkg-config \
