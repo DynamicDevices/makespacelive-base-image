@@ -6,7 +6,7 @@ RUN [ "cross-build-start" ]
 RUN apt-get update \
     && apt-get install -y dnsmasq wireless-tools dbus xterm \
                           v4l-utils nano bc wget unzip netcat alsa-utils build-essential git usbutils openssh-server \
-                          python3 python3-gi python3-matplotlib python3-matplotlib \
+                          python3 python3-gi python3-matplotlib python3-matplotlib python3-pip \
                           gstreamer1.0-tools gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad \
                           gstreamer1.0-plugins-ugly gstreamer1.0-omx gstreamer1.0-alsa \
                           autoconf automake libtool pkg-config \
@@ -15,15 +15,20 @@ RUN apt-get update \
                           texi2html zlib1g-dev libomxil-bellagio-dev libasound2-dev \
                           cmake \
                           ocl-icd-opencl-dev \
-                          libjpeg-dev libtiff5-dev libjasper-dev libpng12-dev \
+                          libjpeg-dev libtiff5-dev libjasper-dev libpng-dev \
                           libavcodec-dev libavformat-dev libswscale-dev libv4l-dev \
-                          libgtk2.0-dev libatlas-base-dev gfortran
+                          libgtk2.0-dev libatlas-base-dev gfortran \
+			  apt-transport-https \
+                          default-jre
 
 # http://bugs.python.org/issue19846
 # > At the moment, setting "LANG=C" on a Linux system *fundamentally breaks Python 3*, and that's not OK.
 ENV LANG C.UTF-8
 
 WORKDIR /usr/src/app
+
+# Install Jupyter
+RUN python3 -m pip install jupyter
 
 # Build FFMPEG
 RUN cd ~ \
