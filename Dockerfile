@@ -27,40 +27,34 @@ ENV LANG C.UTF-8
 
 WORKDIR /usr/src/app
 
-# Install Jupyter
-RUN python3 -m pip install jupyter
+# Setup gst-rpicamsrc
+RUN git clone https://github.com/thaytan/gst-rpicamsrc.git
+RUN cd gst-rpicamsrc && ./autogen.sh && make && make install
+
+# Build GStreamer
+COPY buildscripts/gstreamer-build.sh .
+RUN ./gstreamer-build.sh
 
 # Install FFMPEG Python bindings
 RUN pip3 install wheel
 RUN pip3 install ffmpeg-python
 
-# Setup gst-rpicamsrc
-RUN git clone https://github.com/thaytan/gst-rpicamsrc.git
-RUN cd gst-rpicamsrc && ./autogen.sh && make && make install
-
 # Build FFMPEG
 RUN cd ~ \
     && git clone git://source.ffmpeg.org/ffmpeg.git ffmpeg 
-
 RUN cd ~/ffmpeg \
     && ./configure --enable-libfreetype --enable-gpl --enable-nonfree --enable-libx264 --enable-libass \
                   --enable-libmp3lame --bindir="/usr/local/bin" --enable-omx --enable-omx-rpi --enable-indev=alsa --enable-outdev=alsa
-
 RUN cd ~/ffmpeg \
     && make
-
 RUN cd ~/ffmpeg \
     && make install
 
-# Build OpenCV
-RUN cd ~ && git clone https://github.com/Itseez/opencv.git
-
-RUN cd ~ && cd opencv && git checkout 3.4.3
-
-RUN cd ~ && git clone https://github.com/opencv/opencv_contrib.git
-
-RUN cd ~ && cd opencv_contrib && git checkout 3.4.3
-
-RUN cd ~ && cd opencv && mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local .. && make && make install && ldconfig
+# Build OpenCV (not working?)
+#RUN cd ~ && git clone https://github.com/Itseez/opencv.git
+#RUN cd ~ && cd opencv && git checkout 3.4.3
+#RUN cd ~ && git clone https://github.com/opencv/opencv_contrib.git
+#RUN cd ~ && cd opencv_contrib && git checkout 3.4.3
+#RUN cd ~ && cd opencv && mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local .. && make && make install && ldconfig
 
 RUN [ "cross-build-end" ]  
