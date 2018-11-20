@@ -55,12 +55,12 @@ RUN wget https://nice.freedesktop.org/releases/libnice-0.1.14.tar.gz
 RUN tar xaf libnice-0.1.14.tar.gz && cd libnice-0.1.14 && ./configure && make -j4 install
 
 # Clone gstreamer git repos if they are not there yet
-RUN [ ! -d gstreamer ] && git clone git://anongit.freedesktop.org/git/gstreamer/gstreamer
-RUN [ ! -d gst-plugins-base ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-plugins-base
-RUN [ ! -d gst-plugins-good ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-plugins-good
-RUN [ ! -d gst-plugins-bad ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-plugins-bad
-RUN [ ! -d gst-plugins-ugly ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-plugins-ugly
-RUN [ ! -d gst-omx ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-omx
+RUN [ ! -d gstreamer ] && git clone git://anongit.freedesktop.org/git/gstreamer/gstreamer && cd gstreamer && git show
+RUN [ ! -d gst-plugins-base ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-plugins-base && cd gst-plugins-base && git show
+RUN [ ! -d gst-plugins-good ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-plugins-good && cd gst-plugins-good && git show
+RUN [ ! -d gst-plugins-bad ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-plugins-bad && cd gst-plugins-bad && git show
+RUN [ ! -d gst-plugins-ugly ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-plugins-ugly && cd gst-plugins-ugly && git show
+RUN [ ! -d gst-omx ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-omx && cd gst-omx && git show
 
 RUN export LD_LIBRARY_PATH=/usr/local/lib/ && cd gstreamer && ./autogen.sh --disable-gtk-doc --disable-examples && make -j4 && make install
 
@@ -68,6 +68,21 @@ RUN export LD_LIBRARY_PATH=/usr/local/lib/ && cd gstreamer && ./autogen.sh --dis
 RUN cd gst-plugins-base &&  sed '14d' -i Makefile.am
 RUN cd gst-plugins-base && ./autogen.sh --disable-gtk-doc --disable-examples && make -j4 && make install
 RUN cd gst-plugins-good && ./autogen.sh --disable-gtk-doc --disable-examples && make -j4 && make install
+
+RUN apt-get install -y libssl-dev
+
+# Trouble building these so use packaged versions...
+#RUN git clone https://salsa.debian.org/pkg-voip-team/libsrtp2.git
+#RUN cd libsrtp2 && ./configure && make install
+#RUN cd / && find -name libsrtp*
+RUN wget http://ftp.uk.debian.org/debian/pool/main/libp/libpcap/libpcap0.8_1.8.1-6_armhf.deb
+RUN dpkg -i libpcap0.8_1.8.1-6_armhf.deb
+RUN wget http://ftp.uk.debian.org/debian/pool/main/libp/libpcap/libpcap0.8-dev_1.8.1-6_armhf.deb
+RUN dpkg -i libpcap0.8-dev_1.8.1-6_armhf.deb
+RUN wget http://ftp.uk.debian.org/debian/pool/main/libs/libsrtp2/libsrtp2-1_2.2.0-1_armhf.deb
+RUN dpkg -i libsrtp2-1_2.2.0-1_armhf.deb
+RUN wget http://ftp.uk.debian.org/debian/pool/main/libs/libsrtp2/libsrtp2-dev_2.2.0-1_armhf.deb
+RUN dpkg -i libsrtp2-dev_2.2.0-1_armhf.deb
 
 # Build gstreamer-plugins-bad
 RUN cd gst-plugins-bad && ./autogen.sh --disable-gtk-doc \
