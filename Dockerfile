@@ -62,11 +62,12 @@ RUN [ ! -d gst-plugins-bad ] && git clone git://anongit.freedesktop.org/git/gstr
 RUN [ ! -d gst-plugins-ugly ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-plugins-ugly
 RUN [ ! -d gst-omx ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-omx
 
-RUN export LD_LIBRARY_PATH=/usr/local/lib/ && cd gstreamer && ./autogen.sh --disable-gtk-doc && make -j4 && make install
+RUN export LD_LIBRARY_PATH=/usr/local/lib/ && cd gstreamer && ./autogen.sh --disable-gtk-doc --disable-examples && make -j4 && make install
 
-RUN cd gst-plugins-base && ./autogen.sh --disable-gtk-doc && make -j4 && make install
-
-RUN cd gst-plugins-good && ./autogen.sh --disable-gtk-doc && make -j4 && make install
+# Disable tests build
+RUN cd gst-plugins-base &&  sed '14d' -i Makefile.am
+RUN cd gst-plugins-base && ./autogen.sh --disable-gtk-doc --disable-examples && make -j4 && make install
+RUN cd gst-plugins-good && ./autogen.sh --disable-gtk-doc --disable-examples && make -j4 && make install
 
 # Build gstreamer-plugins-bad
 RUN cd gst-plugins-bad && ./autogen.sh --disable-gtk-doc \
