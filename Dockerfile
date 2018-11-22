@@ -48,6 +48,13 @@ ENV LANG C.UTF-8
 
 WORKDIR /usr/src/app
 
+# Build OpenCV (not working?)
+RUN cd ~ && git clone https://github.com/Itseez/opencv.git
+RUN cd ~ && cd opencv && git checkout 3.4.3
+RUN cd ~ && git clone https://github.com/opencv/opencv_contrib.git
+RUN cd ~ && cd opencv_contrib && git checkout 3.4.3
+RUN cd ~ && cd opencv && mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr .. && make && make install && ldconfig
+
 # Build needed version of nice for gstreamer
 RUN wget https://nice.freedesktop.org/releases/libnice-0.1.14.tar.gz
 RUN tar xaf libnice-0.1.14.tar.gz && cd libnice-0.1.14 && ./configure --prefix=/usr && make -j4 install
@@ -81,6 +88,12 @@ RUN wget http://ftp.uk.debian.org/debian/pool/main/libs/libsrtp2/libsrtp2-1_2.2.
 RUN dpkg -i libsrtp2-1_2.2.0-1_armhf.deb
 RUN wget http://ftp.uk.debian.org/debian/pool/main/libs/libsrtp2/libsrtp2-dev_2.2.0-1_armhf.deb
 RUN dpkg -i libsrtp2-dev_2.2.0-1_armhf.deb
+
+# Kludge to get libfaac-dev for aac enc (actually might not need this...)
+RUN echo "deb http://www.deb-multimedia.org/ wheezy main non-free sudo" >> /etc/apt/sources.list
+RUN apt-get update && apt-get install deb-multimedia-keyring --allow-unauthenticated && apt-get update && apt-get install -y libfaac-dev
+# Get vo-aac-enc
+RUN apt-get install -y libvo-aacenc-dev
 
 # Build gstreamer-plugins-bad
 RUN cd gst-plugins-bad && ./autogen.sh --prefix=/usr --disable-gtk-doc \
@@ -120,13 +133,6 @@ RUN cd gst-rpicamsrc && ./autogen.sh --prefix=/usr && make && make install
 #    && make
 #RUN cd ~/ffmpeg \
 #    && make install
-
-# Build OpenCV (not working?)
-#RUN cd ~ && git clone https://github.com/Itseez/opencv.git
-#RUN cd ~ && cd opencv && git checkout 3.4.3
-#RUN cd ~ && git clone https://github.com/opencv/opencv_contrib.git
-#RUN cd ~ && cd opencv_contrib && git checkout 3.4.3
-#RUN cd ~ && cd opencv && mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr .. && make && make install && ldconfig
 
 RUN [ "cross-build-end" ]  
 
