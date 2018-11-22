@@ -52,7 +52,7 @@ WORKDIR /usr/src/app
 
 # Build needed version of nice for gstreamer
 RUN wget https://nice.freedesktop.org/releases/libnice-0.1.14.tar.gz
-RUN tar xaf libnice-0.1.14.tar.gz && cd libnice-0.1.14 && ./configure && make -j4 install
+RUN tar xaf libnice-0.1.14.tar.gz && cd libnice-0.1.14 && ./configure --prefix=/usr && make -j4 install
 
 # Clone gstreamer git repos if they are not there yet
 RUN [ ! -d gstreamer ] && git clone git://anongit.freedesktop.org/git/gstreamer/gstreamer && cd gstreamer && git show
@@ -62,12 +62,12 @@ RUN [ ! -d gst-plugins-bad ] && git clone git://anongit.freedesktop.org/git/gstr
 RUN [ ! -d gst-plugins-ugly ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-plugins-ugly && cd gst-plugins-ugly && git show
 RUN [ ! -d gst-omx ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-omx && cd gst-omx && git show
 
-RUN export LD_LIBRARY_PATH=/usr/local/lib/ && cd gstreamer && ./autogen.sh --disable-gtk-doc --disable-examples && make -j4 && make install
+RUN export LD_LIBRARY_PATH=/usr/lib && cd gstreamer && ./autogen.sh --prefix=/usr --disable-gtk-doc --disable-examples && make -j4 && make install
 
 # Disable tests build
 RUN cd gst-plugins-base &&  sed '14d' -i Makefile.am
-RUN cd gst-plugins-base && ./autogen.sh --disable-gtk-doc --disable-examples && make -j4 && make install
-RUN cd gst-plugins-good && ./autogen.sh --disable-gtk-doc --disable-examples && make -j4 && make install
+RUN cd gst-plugins-base && ./autogen.sh --prefix=/usr --disable-gtk-doc --disable-examples && make -j4 && make install
+RUN cd gst-plugins-good && ./autogen.sh --prefix=/usr --disable-gtk-doc --disable-examples && make -j4 && make install
 
 RUN apt-get install -y libssl-dev
 
@@ -85,7 +85,7 @@ RUN wget http://ftp.uk.debian.org/debian/pool/main/libs/libsrtp2/libsrtp2-dev_2.
 RUN dpkg -i libsrtp2-dev_2.2.0-1_armhf.deb
 
 # Build gstreamer-plugins-bad
-RUN cd gst-plugins-bad && ./autogen.sh --disable-gtk-doc \
+RUN cd gst-plugins-bad && ./autogen.sh --prefix=/usr --disable-gtk-doc \
  && export CFLAGS='-I/opt/vc/include -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux/' \
  && export LDFLAGS='-L/opt/vc/lib' \
  && ./configure CFLAGS='-I/opt/vc/include -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux/' LDFLAGS='-I/opt/vc/lib' \
@@ -100,13 +100,13 @@ RUN cd gst-plugins-bad && make CFLAGS+='-Wno-error -Wno-redundant-decls' LDFLAGS
 RUN cd gst-omx && export LDFLAGS='-L/opt/vc/lib' \
 CFLAGS='-I/opt/vc/include -I/opt/vc/include/IL -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux -I/opt/vc/include/IL' \
 CPPFLAGS='-I/opt/vc/include -I/opt/vc/include/IL -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux -I/opt/vc/include/IL' \
-&& ./autogen.sh --disable-gtk-doc --with-omx-target=rpi \
+&& ./autogen.sh --prefix=/usr --disable-gtk-doc --with-omx-target=rpi \
 && make CFLAGS+='-Wno-error -Wno-redundant-decls' LDFLAGS+='-L/opt/vc/lib' -j4 \
 && sudo make install
 
 # Setup gst-rpicamsrc
 RUN git clone https://github.com/thaytan/gst-rpicamsrc.git
-RUN cd gst-rpicamsrc && ./autogen.sh && make && make install
+RUN cd gst-rpicamsrc && ./autogen.sh --prefix=/usr && make && make install
 
 # Install FFMPEG Python bindings
 #RUN pip3 install wheel
@@ -117,7 +117,7 @@ RUN cd gst-rpicamsrc && ./autogen.sh && make && make install
 #    && git clone git://source.ffmpeg.org/ffmpeg.git ffmpeg 
 #RUN cd ~/ffmpeg \
 #    && ./configure --enable-libfreetype --enable-gpl --enable-nonfree --enable-libx264 --enable-libass \
-#                  --enable-libmp3lame --bindir="/usr/local/bin" --enable-omx --enable-omx-rpi --enable-indev=alsa --enable-outdev=alsa
+#                  --enable-libmp3lame --prefix=/usr --enable-omx --enable-omx-rpi --enable-indev=alsa --enable-outdev=alsa
 #RUN cd ~/ffmpeg \
 #    && make
 #RUN cd ~/ffmpeg \
@@ -128,7 +128,7 @@ RUN cd gst-rpicamsrc && ./autogen.sh && make && make install
 #RUN cd ~ && cd opencv && git checkout 3.4.3
 #RUN cd ~ && git clone https://github.com/opencv/opencv_contrib.git
 #RUN cd ~ && cd opencv_contrib && git checkout 3.4.3
-#RUN cd ~ && cd opencv && mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local .. && make && make install && ldconfig
+#RUN cd ~ && cd opencv && mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr .. && make && make install && ldconfig
 
 RUN [ "cross-build-end" ]  
 
