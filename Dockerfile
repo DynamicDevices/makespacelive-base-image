@@ -178,5 +178,11 @@ RUN cd gst-rpicamsrc && ./autogen.sh --prefix=/usr && make && make install
 #RUN cd ~/ffmpeg \
 #    && make install
 
+#
+# Install Jupyter
+#
+RUN python3 -m pip install jupyter
+
+
 RUN [ "cross-build-end" ]  
 
