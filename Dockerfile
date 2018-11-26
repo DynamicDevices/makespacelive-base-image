@@ -55,10 +55,6 @@ RUN cd ~ && git clone https://github.com/opencv/opencv_contrib.git
 RUN cd ~ && cd opencv_contrib && git checkout 3.4.3
 RUN cd ~ && cd opencv && mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr .. && make && make install && ldconfig
 
-# Build needed version of nice for gstreamer
-RUN wget https://nice.freedesktop.org/releases/libnice-0.1.14.tar.gz
-RUN tar xaf libnice-0.1.14.tar.gz && cd libnice-0.1.14 && ./configure --prefix=/usr && make -j4 install
-
 # Clone gstreamer git repos if they are not there yet
 RUN [ ! -d gstreamer ] && git clone git://anongit.freedesktop.org/git/gstreamer/gstreamer && cd gstreamer && git show
 RUN [ ! -d gst-plugins-base ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-plugins-base && cd gst-plugins-base && git show
@@ -95,11 +91,15 @@ RUN apt-get update && apt-get install deb-multimedia-keyring --allow-unauthentic
 # Get vo-aac-enc
 RUN apt-get install -y libvo-aacenc-dev
 
+# Build needed version of nice for gstreamer
+RUN wget https://nice.freedesktop.org/releases/libnice-0.1.14.tar.gz
+RUN tar xaf libnice-0.1.14.tar.gz && cd libnice-0.1.14 && ./configure --prefix=/usr --with-gstreamer && make -j4 install
+
 # Build gstreamer-plugins-bad
 RUN cd gst-plugins-bad && ./autogen.sh --prefix=/usr --disable-gtk-doc \
  && export CFLAGS='-I/opt/vc/include -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux/' \
  && export LDFLAGS='-L/opt/vc/lib' \
- && ./configure CFLAGS='-I/opt/vc/include -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux/' LDFLAGS='-I/opt/vc/lib' \
+ && ./configure --prefix=/usr CFLAGS='-I/opt/vc/include -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux/' LDFLAGS='-I/opt/vc/lib' \
 --disable-gtk-doc --disable-opengl --enable-gles2 --enable-egl --disable-glx \
 --disable-x11 --disable-wayland --enable-dispmanx \
 --with-gles2-module-name=/opt/vc/lib/libGLESv2.so \
