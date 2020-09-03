@@ -1,4 +1,4 @@
-FROM resin/raspberrypi3-debian:stretch
+FROM resin/raspberrypi3-debian:buster
 
 RUN [ "cross-build-start" ]
 
@@ -36,7 +36,7 @@ RUN apt-get update \
                           libshout3-dev libjpeg-dev libaa1-dev libflac-dev libdv4-dev \
                           libtag1-dev libwavpack-dev libpulse-dev libsoup2.4-dev libbz2-dev \
                           libcdaudio-dev libdc1394-22-dev ladspa-sdk libass-dev \
-                          libcurl4-gnutls-dev libdca-dev libdirac-dev libdvdnav-dev \
+                          libcurl4-gnutls-dev libdca-dev libdvdnav-dev \
                           libexempi-dev libexif-dev libfaad-dev libgme-dev libgsm1-dev \
                           libiptcdata0-dev libkate-dev libmimic-dev libmms-dev \
                           libmodplug-dev libmpcdec-dev libofa0-dev libopus-dev \
@@ -52,21 +52,11 @@ RUN apt-get update \
                           libssl-dev libvo-aacenc-dev
 
 # Kludge to get libfaac-dev for aac enc (actually might not need this...)
-RUN echo "deb http://www.deb-multimedia.org/ wheezy main non-free sudo" >> /etc/apt/sources.list
-RUN apt-get update && apt-get install deb-multimedia-keyring --allow-unauthenticated && apt-get update && apt-get install -y libfaac-dev
+RUN echo "deb [ allow-insecure=yes ] http://www.deb-multimedia.org/ buster main non-free" >> /etc/apt/sources.list
+RUN apt-get update && apt-get install -y --allow-unauthenticated deb-multimedia-keyring libfaac-dev
 
-# Trouble building these so use packaged versions...
-#RUN git clone https://salsa.debian.org/pkg-voip-team/libsrtp2.git
-#RUN cd libsrtp2 && ./configure && make install
-#RUN cd / && find -name libsrtp*
-RUN wget http://ftp.uk.debian.org/debian/pool/main/libp/libpcap/libpcap0.8_1.8.1-6_armhf.deb
-RUN dpkg -i libpcap0.8_1.8.1-6_armhf.deb
-RUN wget http://ftp.uk.debian.org/debian/pool/main/libp/libpcap/libpcap0.8-dev_1.8.1-6_armhf.deb
-RUN dpkg -i libpcap0.8-dev_1.8.1-6_armhf.deb
-RUN wget http://ftp.uk.debian.org/debian/pool/main/libs/libsrtp2/libsrtp2-1_2.2.0-1_armhf.deb
-RUN dpkg -i libsrtp2-1_2.2.0-1_armhf.deb
-RUN wget http://ftp.uk.debian.org/debian/pool/main/libs/libsrtp2/libsrtp2-dev_2.2.0-1_armhf.deb
-RUN dpkg -i libsrtp2-dev_2.2.0-1_armhf.deb
+# Move up
+RUN apt-get install libpcap0.8 libsrtp2-dev
 
 ##
 ## Start building
@@ -89,21 +79,26 @@ RUN [ ! -d gst-plugins-bad ] && git clone git://anongit.freedesktop.org/git/gstr
 RUN [ ! -d gst-plugins-ugly ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-plugins-ugly && cd gst-plugins-ugly && git show
 RUN [ ! -d gst-omx ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-omx && cd gst-omx && git show
 
+RUN apt-get install meson
+
 #
 # GStreamer
 #
-RUN export LD_LIBRARY_PATH=/usr/lib && cd gstreamer && ./autogen.sh --prefix=/usr --disable-gtk-doc --disable-examples && make -j4 && make install
+#RUN export LD_LIBRARY_PATH=/usr/lib && cd gstreamer && ls && ./autogen.sh --prefix=/usr --disable-gtk-doc --disable-examples && make -j4 && make install
+RUN export LD_LIBRARY_PATH=/usr/lib && cd gstreamer && meson build && ninja -C build install
 
 # GStreamer plugins { base, good }
-RUN cd gst-plugins-base &&  sed '14d' -i Makefile.am
-RUN cd gst-plugins-base && ./autogen.sh --prefix=/usr --disable-gtk-doc --disable-examples && make -j4 && make install
-RUN cd gst-plugins-good && ./autogen.sh --prefix=/usr --disable-gtk-doc --disable-examples && make -j4 && make install
+#RUN cd gst-plugins-base &&  sed '14d' -i Makefile.am
+#RUN cd gst-plugins-base && ./autogen.sh --prefix=/usr --disable-gtk-doc --disable-examples && make -j4 && make install
+RUN cd gst-plugins-base && meson build && ninja -C build install
+#RUN cd gst-plugins-good && ./autogen.sh --prefix=/usr --disable-gtk-doc --disable-examples && make -j4 && make install
+RUN cd gst-plugins-good && meson build && ninja -C build install
 
 #
 # Build needed version of nice for Gstreamer plugins bad
 #
-RUN wget https://nice.freedesktop.org/releases/libnice-0.1.14.tar.gz
-RUN tar xaf libnice-0.1.14.tar.gz && cd libnice-0.1.14 && ./configure --prefix=/usr --with-gstreamer && make -j4 install
+RUN wget https://libnice.freedesktop.org/releases/libnice-0.1.17.tar.gz
+RUN tar xzf libnice-0.1.17.tar.gz && cd libnice-0.1.17 && ./configure --prefix=/usr --with-gstreamer && make -j4 install
 
 #
 # Build lksctp
@@ -116,9 +111,9 @@ RUN cd lksctp-tools && ./bootstrap
 # Build OpenCV (after we've built GStreamer so it gets detected
 #
 RUN cd ~ && git clone https://github.com/Itseez/opencv.git
-RUN cd ~ && cd opencv && git checkout 3.4.3
+RUN cd ~ && cd opencv && git checkout 4.4.0
 RUN cd ~ && git clone https://github.com/opencv/opencv_contrib.git
-RUN cd ~ && cd opencv_contrib && git checkout 3.4.3
+RUN cd ~ && cd opencv_contrib && git checkout 4.4.0
 RUN cd ~ && cd opencv && mkdir build && cd build && cmake -DOPENCV_EXTRA_MODULES_PATH=~/opencv_contrib/modules \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX=/usr \
@@ -134,24 +129,36 @@ RUN cd ~ && cd opencv && mkdir build && cd build && cmake -DOPENCV_EXTRA_MODULES
 #
 # Gstreamer-plugins-bad
 #
-RUN cd gst-plugins-bad && ./autogen.sh --prefix=/usr --disable-gtk-doc \
- && export CFLAGS='-I/opt/vc/include -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux/' \
- && export LDFLAGS='-L/opt/vc/lib' \
- && ./configure --prefix=/usr CFLAGS='-I/opt/vc/include -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux/' LDFLAGS='-I/opt/vc/lib' \
---disable-gtk-doc --disable-opengl --enable-gles2 --enable-egl --disable-glx \
---disable-x11 --disable-wayland --enable-dispmanx \
---with-gles2-module-name=/opt/vc/lib/libGLESv2.so \
---with-egl-module-name=/opt/vc/lib/libEGL.so \
---enable-webrtc --disable-examples
-RUN cd gst-plugins-bad && make CFLAGS+='-Wno-error -Wno-redundant-decls' LDFLAGS+='-L/opt/vc/lib' -j4 && sudo make install
+#RUN cd gst-plugins-bad && ./autogen.sh --prefix=/usr --disable-gtk-doc \
+# && export CFLAGS='-I/opt/vc/include -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux/' \
+# && export LDFLAGS='-L/opt/vc/lib' \
+# && ./configure --prefix=/usr CFLAGS='-I/opt/vc/include -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux/' LDFLAGS='-I/opt/vc/lib' \
+#--disable-gtk-doc --disable-opengl --enable-gles2 --enable-egl --disable-glx \
+#--disable-x11 --disable-wayland --enable-dispmanx \
+#--with-gles2-module-name=/opt/vc/lib/libGLESv2.so \
+#--with-egl-module-name=/opt/vc/lib/libEGL.so \
+#--enable-webrtc --disable-examples
+#RUN cd gst-plugins-bad && make CFLAGS+='-Wno-error -Wno-redundant-decls' LDFLAGS+='-L/opt/vc/lib' -j4 && sudo make install
+RUN cd gst-plugins-bad && meson build && ninja -C build install
+
+# CAN'T WORK OUT HOW TO BUILD THIS ??
 
 # GStreamer OMX support
-RUN cd gst-omx && export LDFLAGS='-L/opt/vc/lib' \
-CFLAGS='-I/opt/vc/include -I/opt/vc/include/IL -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux -I/opt/vc/include/IL' \
-CPPFLAGS='-I/opt/vc/include -I/opt/vc/include/IL -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux -I/opt/vc/include/IL' \
-&& ./autogen.sh --prefix=/usr --disable-gtk-doc --with-omx-target=rpi \
-&& make CFLAGS+='-Wno-error -Wno-redundant-decls' LDFLAGS+='-L/opt/vc/lib' -j4 \
-&& sudo make install
+#CFLAGS='-I/opt/vc/include -I/opt/vc/include/IL -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux -I/opt/vc/include/IL' \
+#CPPFLAGS='-I/opt/vc/include -I/opt/vc/include/IL -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux -I/opt/vc/include/IL' \
+
+#RUN cd gst-omx && export LDFLAGS='-L/opt/vc/lib' \
+#&& CFLAGS='-I/opt/vc/include -I/opt/vc/include/IL -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux' \
+#&& CPPFLAGS='-I/opt/vc/include -I/opt/vc/include/IL -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux' \
+#&& meson -Dtarget=rpi Dc_args='-I/opt/vc/include,-I/opt/vc/include/IL,-I/opt/vc/include/interface/vcos/pthreads,-I/opt/vc/include/interface/vmcs_host/linux' configure --prefix=/usr \
+#&& meson -Dtarget=rpi compile \
+#RUN cd gst-omx && ln /opt/vc/include/IL/OMX_Broadcom.h omx/OMX_Broadcom.h -s
+
+#RUN cd gst-omx && touch omx/OMX_Broadcom.h
+#RUN cd gst-omx && meson -Dtarget=rpi build && ninja -C build install
+
+#&& make CFLAGS+='-Wno-error -Wno-redundant-decls' LDFLAGS+='-L/opt/vc/lib' -j4 \
+#&& sudo make install
 
 #
 # GStreamer  gst-rpicamsrc
@@ -162,27 +169,32 @@ RUN cd gst-rpicamsrc && ./autogen.sh --prefix=/usr && make && make install
 #
 # Install FFMPEG Python bindings
 #
-#RUN pip3 install wheel
-#RUN pip3 install ffmpeg-python
+RUN pip3 install wheel
+RUN pip3 install ffmpeg-python
 
 #
 # Build FFMPEG
 #
-#RUN cd ~ \
-#    && git clone git://source.ffmpeg.org/ffmpeg.git ffmpeg 
-#RUN cd ~/ffmpeg \
-#    && ./configure --enable-libfreetype --enable-gpl --enable-nonfree --enable-libx264 --enable-libass \
-#                  --enable-libmp3lame --prefix=/usr --enable-omx --enable-omx-rpi --enable-indev=alsa --enable-outdev=alsa
-#RUN cd ~/ffmpeg \
-#    && make
-#RUN cd ~/ffmpeg \
-#    && make install
+RUN cd ~ \
+    && git clone git://source.ffmpeg.org/ffmpeg.git ffmpeg 
+RUN cd ~/ffmpeg \
+    && ./configure --enable-libfreetype --enable-gpl --enable-nonfree --enable-libx264 --enable-libass \
+                  --enable-libmp3lame --prefix=/usr --enable-omx --enable-omx-rpi --enable-indev=alsa --enable-outdev=alsa --extra-ldflags="-latomic"
+RUN cd ~/ffmpeg \
+    && make
+RUN cd ~/ffmpeg \
+    && make install
 
 #
 # Install Jupyter
 #
 RUN python3 -m pip install jupyter
 
+#
+# Cleanup build
+#
+RUN rm -Rf gst-omx gst-plugins-bad gst-plugins-base gst-plugins-good gst-plugins-ugly gst-rpicamsrc gstreamer libnice* lksctp-tools openh264
+RUN ls
 
 RUN [ "cross-build-end" ]  
 
