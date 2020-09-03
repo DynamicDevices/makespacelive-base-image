@@ -49,20 +49,17 @@ RUN apt-get update \
                           yasm python-gi-dev python3-dev libgirepository1.0-dev \
                           gettext \
                           libjson-glib-dev libopus-dev libvpx-dev \
-                          libssl-dev libvo-aacenc-dev
+                          libssl-dev libvo-aacenc-dev libpcap0.8 libsrtp2-dev meson
 
 # Kludge to get libfaac-dev for aac enc (actually might not need this...)
 RUN echo "deb [ allow-insecure=yes ] http://www.deb-multimedia.org/ buster main non-free" >> /etc/apt/sources.list
 RUN apt-get update && apt-get install -y --allow-unauthenticated deb-multimedia-keyring libfaac-dev
 
-# Move up
-RUN apt-get install libpcap0.8 libsrtp2-dev
-
 ##
 ## Start building
 ##
 
-RUN pip3 install numpy
+RUN pip3 install numpy wheel ffmpeg-python
 
 #
 # Build OpenH264
@@ -79,8 +76,6 @@ RUN [ ! -d gst-plugins-bad ] && git clone git://anongit.freedesktop.org/git/gstr
 RUN [ ! -d gst-plugins-ugly ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-plugins-ugly && cd gst-plugins-ugly && git show
 RUN [ ! -d gst-omx ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-omx && cd gst-omx && git show
 
-RUN apt-get install meson
-
 #
 # GStreamer
 #
@@ -88,10 +83,7 @@ RUN apt-get install meson
 RUN export LD_LIBRARY_PATH=/usr/lib && cd gstreamer && meson build && ninja -C build install
 
 # GStreamer plugins { base, good }
-#RUN cd gst-plugins-base &&  sed '14d' -i Makefile.am
-#RUN cd gst-plugins-base && ./autogen.sh --prefix=/usr --disable-gtk-doc --disable-examples && make -j4 && make install
 RUN cd gst-plugins-base && meson build && ninja -C build install
-#RUN cd gst-plugins-good && ./autogen.sh --prefix=/usr --disable-gtk-doc --disable-examples && make -j4 && make install
 RUN cd gst-plugins-good && meson build && ninja -C build install
 
 #
@@ -129,16 +121,6 @@ RUN cd ~ && cd opencv && mkdir build && cd build && cmake -DOPENCV_EXTRA_MODULES
 #
 # Gstreamer-plugins-bad
 #
-#RUN cd gst-plugins-bad && ./autogen.sh --prefix=/usr --disable-gtk-doc \
-# && export CFLAGS='-I/opt/vc/include -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux/' \
-# && export LDFLAGS='-L/opt/vc/lib' \
-# && ./configure --prefix=/usr CFLAGS='-I/opt/vc/include -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux/' LDFLAGS='-I/opt/vc/lib' \
-#--disable-gtk-doc --disable-opengl --enable-gles2 --enable-egl --disable-glx \
-#--disable-x11 --disable-wayland --enable-dispmanx \
-#--with-gles2-module-name=/opt/vc/lib/libGLESv2.so \
-#--with-egl-module-name=/opt/vc/lib/libEGL.so \
-#--enable-webrtc --disable-examples
-#RUN cd gst-plugins-bad && make CFLAGS+='-Wno-error -Wno-redundant-decls' LDFLAGS+='-L/opt/vc/lib' -j4 && sudo make install
 RUN cd gst-plugins-bad && meson build && ninja -C build install
 
 # CAN'T WORK OUT HOW TO BUILD THIS ??
@@ -167,23 +149,14 @@ RUN git clone https://github.com/thaytan/gst-rpicamsrc.git
 RUN cd gst-rpicamsrc && ./autogen.sh --prefix=/usr && make && make install
 
 #
-# Install FFMPEG Python bindings
-#
-RUN pip3 install wheel
-RUN pip3 install ffmpeg-python
-
-#
 # Build FFMPEG
 #
 RUN cd ~ \
     && git clone git://source.ffmpeg.org/ffmpeg.git ffmpeg 
 RUN cd ~/ffmpeg \
     && ./configure --enable-libfreetype --enable-gpl --enable-nonfree --enable-libx264 --enable-libass \
-                  --enable-libmp3lame --prefix=/usr --enable-omx --enable-omx-rpi --enable-indev=alsa --enable-outdev=alsa --extra-ldflags="-latomic"
-RUN cd ~/ffmpeg \
-    && make
-RUN cd ~/ffmpeg \
-    && make install
+                  --enable-libmp3lame --prefix=/usr --enable-omx --enable-omx-rpi --enable-indev=alsa --enable-outdev=alsa --extra-ldflags="-latomic" \
+    && make && make install
 
 #
 # Install Jupyter
