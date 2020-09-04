@@ -1,4 +1,4 @@
-FROM resin/raspberrypi3-debian:buster AS build
+FROM balenalib/raspberrypi3-alpine as build
 
 RUN [ "cross-build-start" ]
 
@@ -14,172 +14,34 @@ WORKDIR /src
 ENV LANG C.UTF-8
 
 # Install dependencies
-RUN apt-get update \
-    && apt-get install -y dnsmasq wireless-tools dbus xterm \
-                          v4l-utils nano bc wget unzip netcat alsa-utils build-essential git usbutils openssh-server \
-                          python3 python3-gi python3-pip python3-setuptools python3-matplotlib\
-                          autoconf automake libtool pkg-config \
-                          libraspberrypi-dev \
-                          libmp3lame-dev libx264-dev yasm git libass-dev libfreetype6-dev libtheora-dev libvorbis-dev \
-                          texi2html zlib1g-dev libomxil-bellagio-dev libasound2-dev \
-                          cmake \
-                          ocl-icd-opencl-dev \
-                          libjpeg-dev libtiff5-dev libjasper-dev libpng-dev \
-                          libavcodec-dev libavformat-dev libswscale-dev libv4l-dev \
-                          libgtk2.0-dev libatlas-base-dev gfortran \
-			  apt-transport-https \
-                          default-jre \
-                          build-essential autotools-dev automake autoconf \
-                          libtool autopoint libxml2-dev zlib1g-dev libglib2.0-dev \
-                          pkg-config bison flex python3 git gtk-doc-tools libasound2-dev \
-                          libgudev-1.0-dev libxt-dev libvorbis-dev libcdparanoia-dev \
-                          libpango1.0-dev libtheora-dev libvisual-0.4-dev iso-codes \
-                          libgtk-3-dev libraw1394-dev libiec61883-dev libavc1394-dev \
-                          libv4l-dev libcairo2-dev libcaca-dev libspeex-dev libpng-dev \
-                          libshout3-dev libjpeg-dev libaa1-dev libflac-dev libdv4-dev \
-                          libtag1-dev libwavpack-dev libpulse-dev libsoup2.4-dev libbz2-dev \
-                          libcdaudio-dev libdc1394-22-dev ladspa-sdk libass-dev \
-                          libcurl4-gnutls-dev libdca-dev libdvdnav-dev \
-                          libexempi-dev libexif-dev libfaad-dev libgme-dev libgsm1-dev \
-                          libiptcdata0-dev libkate-dev libmimic-dev libmms-dev \
-                          libmodplug-dev libmpcdec-dev libofa0-dev libopus-dev \
-                          librsvg2-dev librtmp-dev libschroedinger-dev libslv2-dev \
-                          libsndfile1-dev libsoundtouch-dev libspandsp-dev libx11-dev \
-                          libxvidcore-dev libzbar-dev libzvbi-dev liba52-0.7.4-dev \
-                          libcdio-dev libdvdread-dev libmad0-dev libmp3lame-dev \
-                          libmpeg2-4-dev libopencore-amrnb-dev libopencore-amrwb-dev \
-                          libsidplay1-dev libtwolame-dev libx264-dev libusb-1.0 \
-                          yasm python-gi-dev python3-dev libgirepository1.0-dev \
-                          gettext \
-                          libjson-glib-dev libopus-dev libvpx-dev \
-                          libssl-dev libvo-aacenc-dev libpcap0.8 libsrtp2-dev meson
-
-# Kludge to get libfaac-dev for aac enc (actually might not need this...)
-RUN echo "deb [ allow-insecure=yes ] http://www.deb-multimedia.org/ buster main non-free" >> /etc/apt/sources.list
-RUN apt-get update && apt-get install -y --allow-unauthenticated deb-multimedia-keyring libfaac-dev
-
-##
-## Start building
-##
-
-RUN pip3 install numpy wheel ffmpeg-python
-
-#
-# Build OpenH264
-#
-#RUN git clone https://github.com/cisco/openh264 && cd openh264 && make && make install
-
-#
-# Clone gstreamer git repos if they are not there yet
-#
-#RUN [ ! -d gstreamer ] && git clone git://anongit.freedesktop.org/git/gstreamer/gstreamer && cd gstreamer && git show
-#RUN [ ! -d gst-plugins-base ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-plugins-base && cd gst-plugins-base && git show
-#RUN [ ! -d gst-plugins-good ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-plugins-good && cd gst-plugins-good && git show
-#RUN [ ! -d gst-plugins-bad ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-plugins-bad && cd gst-plugins-bad && git show
-#RUN [ ! -d gst-plugins-ugly ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-plugins-ugly && cd gst-plugins-ugly && git show
-#RUN [ ! -d gst-omx ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-omx && cd gst-omx && git show
-
-#
-# GStreamer
-#
-#RUN export LD_LIBRARY_PATH=/usr/lib && cd gstreamer && ls && ./autogen.sh --prefix=/usr --disable-gtk-doc --disable-examples && make -j4 && make install
-#RUN export LD_LIBRARY_PATH=/usr/lib && cd gstreamer && meson build && ninja -C build install
-
-# GStreamer plugins { base, good }
-#RUN cd gst-plugins-base && meson build && ninja -C build install
-#RUN cd gst-plugins-good && meson build && ninja -C build install
-
-#
-# Build needed version of nice for Gstreamer plugins bad
-#
-#RUN wget https://libnice.freedesktop.org/releases/libnice-0.1.17.tar.gz
-#RUN tar xzf libnice-0.1.17.tar.gz && cd libnice-0.1.17 && ./configure --prefix=/usr --with-gstreamer && make -j4 install
-
-#
-# Build lksctp
-#
-#RUN git clone git://github.com/sctp/lksctp-tools.git
-#RUN cd lksctp-tools && git checkout lksctp-tools-1.0.17
-#RUN cd lksctp-tools && ./bootstrap
-
-#
-# Build OpenCV (after we've built GStreamer so it gets detected
-#
-#RUN cd ~ && git clone https://github.com/Itseez/opencv.git
-#RUN cd ~ && cd opencv && git checkout 4.4.0
-#RUN cd ~ && git clone https://github.com/opencv/opencv_contrib.git
-#RUN cd ~ && cd opencv_contrib && git checkout 4.4.0
-#RUN cd ~ && cd opencv && mkdir build && cd build && cmake -DOPENCV_EXTRA_MODULES_PATH=~/opencv_contrib/modules \
-#            -DCMAKE_BUILD_TYPE=Release \
-#            -DCMAKE_INSTALL_PREFIX=/usr \
-#            -D ENABLE_NEON=ON \
-#            -D ENABLE_VFPV3=ON \
-#            -D BUILD_TESTS=OFF \
-#            -D INSTALL_PYTHON_EXAMPLES=OFF \
-#            -D BUILD_EXAMPLES=OFF .. \
-#         && make \
-#         && make install \
-#         && ldconfig
-
-#
-# Gstreamer-plugins-bad
-#
-#RUN cd gst-plugins-bad && meson build && ninja -C build install
-
-# CAN'T WORK OUT HOW TO BUILD THIS ??
-
-## GStreamer OMX support
-##CFLAGS='-I/opt/vc/include -I/opt/vc/include/IL -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux -I/opt/vc/include/IL' \
-##CPPFLAGS='-I/opt/vc/include -I/opt/vc/include/IL -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux -I/opt/vc/include/IL' \
-#
-##RUN cd gst-omx && export LDFLAGS='-L/opt/vc/lib' \
-##&& CFLAGS='-I/opt/vc/include -I/opt/vc/include/IL -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux' \
-##&& CPPFLAGS='-I/opt/vc/include -I/opt/vc/include/IL -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux' \
-##&& meson -Dtarget=rpi Dc_args='-I/opt/vc/include,-I/opt/vc/include/IL,-I/opt/vc/include/interface/vcos/pthreads,-I/opt/vc/include/interface/vmcs_host/linux' configure --prefix=/usr \
-##&& meson -Dtarget=rpi compile \
-##RUN cd gst-omx && ln /opt/vc/include/IL/OMX_Broadcom.h omx/OMX_Broadcom.h -s
-#
-##RUN cd gst-omx && touch omx/OMX_Broadcom.h
-##RUN cd gst-omx && meson -Dtarget=rpi build && ninja -C build install
-#
-##&& make CFLAGS+='-Wno-error -Wno-redundant-decls' LDFLAGS+='-L/opt/vc/lib' -j4 \
-##&& sudo make install
-
-#
-# GStreamer  gst-rpicamsrc
-#
-#RUN git clone https://github.com/thaytan/gst-rpicamsrc.git
-#RUN cd gst-rpicamsrc && ./autogen.sh --prefix=/usr && make && make install
+RUN apk add ffmpeg-dev git alpine-sdk libass-dev lame-dev pulseaudio-dev x264-dev
 
 #
 # Build FFMPEG
 #
 RUN git clone git://source.ffmpeg.org/ffmpeg.git ffmpeg 
+
+RUN apk add alsa-lib-dev
+
+# Grab firmware /opt/vc files
+RUN wget https://github.com/raspberrypi/firmware/archive/1.20200819.tar.gz && tar xzf 1.20200819.tar.gz && cp -rpf firmware-1.20200819/opt /
+
 RUN cd ffmpeg \
     && mkdir build \
     && ./configure --prefix=/build --enable-libfreetype --enable-gpl --enable-libx264 --enable-libass \
-                  --enable-libmp3lame --prefix=build --enable-omx --enable-omx-rpi --enable-indev=alsa --enable-outdev=alsa --extra-ldflags="-latomic" \
-    && make && make install
-
-#
-# Install Jupyter
-#
-#RUN python3 -m pip install jupyter
-
-RUN ls ffmpeg/build
+                  --enable-libmp3lame --prefix=build --enable-omx --enable-omx-rpi --enable-libpulse --enable-indev=alsa --enable-outdev=alsa --extra-ldflags="-latomic" \
+    && make -j4 && make install
 
 RUN [ "cross-build-end" ]  
 
-FROM resin/raspberrypi3-debian:buster
+FROM balenalib/raspberrypi3-alpine
 
 RUN [ "cross-build-start" ]
 
 WORKDIR /beemon
 
 # Install standard ffmpeg
-RUN apt-get update \
-    && apt-get install ffmpeg \
-    && apt-get clean
+RUN apk add ffmpeg libpulse raspberrypi
 
 # Copy across new ffmpeg files
 COPY --from=build /src/ffmpeg/build/ /usr/
