@@ -176,7 +176,12 @@ RUN [ "cross-build-start" ]
 
 WORKDIR /beemon
 
-# Copy across ffmpeg files
+# Install standard ffmpeg
+RUN apt-get update \
+    && apt-get install ffmpeg \
+    && apt-get clean
+
+# Copy across new ffmpeg files
 COPY --from=build /src/ffmpeg/build/ /usr/
 
 #RUN chmod +x launcher.sh
