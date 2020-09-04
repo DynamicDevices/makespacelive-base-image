@@ -1,6 +1,9 @@
-FROM resin/raspberrypi3-debian:buster
+FROM resin/raspberrypi3-debian:buster AS build
 
 RUN [ "cross-build-start" ]
+
+RUN mkdir -p /src
+WORKDIR /src
 
 ##
 ## Setup & Install Dependencies
@@ -64,110 +67,119 @@ RUN pip3 install numpy wheel ffmpeg-python
 #
 # Build OpenH264
 #
-RUN git clone https://github.com/cisco/openh264 && cd openh264 && make && make install
+#RUN git clone https://github.com/cisco/openh264 && cd openh264 && make && make install
 
 #
 # Clone gstreamer git repos if they are not there yet
 #
-RUN [ ! -d gstreamer ] && git clone git://anongit.freedesktop.org/git/gstreamer/gstreamer && cd gstreamer && git show
-RUN [ ! -d gst-plugins-base ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-plugins-base && cd gst-plugins-base && git show
-RUN [ ! -d gst-plugins-good ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-plugins-good && cd gst-plugins-good && git show
-RUN [ ! -d gst-plugins-bad ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-plugins-bad && cd gst-plugins-bad && git show
-RUN [ ! -d gst-plugins-ugly ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-plugins-ugly && cd gst-plugins-ugly && git show
-RUN [ ! -d gst-omx ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-omx && cd gst-omx && git show
+#RUN [ ! -d gstreamer ] && git clone git://anongit.freedesktop.org/git/gstreamer/gstreamer && cd gstreamer && git show
+#RUN [ ! -d gst-plugins-base ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-plugins-base && cd gst-plugins-base && git show
+#RUN [ ! -d gst-plugins-good ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-plugins-good && cd gst-plugins-good && git show
+#RUN [ ! -d gst-plugins-bad ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-plugins-bad && cd gst-plugins-bad && git show
+#RUN [ ! -d gst-plugins-ugly ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-plugins-ugly && cd gst-plugins-ugly && git show
+#RUN [ ! -d gst-omx ] && git clone git://anongit.freedesktop.org/git/gstreamer/gst-omx && cd gst-omx && git show
 
 #
 # GStreamer
 #
 #RUN export LD_LIBRARY_PATH=/usr/lib && cd gstreamer && ls && ./autogen.sh --prefix=/usr --disable-gtk-doc --disable-examples && make -j4 && make install
-RUN export LD_LIBRARY_PATH=/usr/lib && cd gstreamer && meson build && ninja -C build install
+#RUN export LD_LIBRARY_PATH=/usr/lib && cd gstreamer && meson build && ninja -C build install
 
 # GStreamer plugins { base, good }
-RUN cd gst-plugins-base && meson build && ninja -C build install
-RUN cd gst-plugins-good && meson build && ninja -C build install
+#RUN cd gst-plugins-base && meson build && ninja -C build install
+#RUN cd gst-plugins-good && meson build && ninja -C build install
 
 #
 # Build needed version of nice for Gstreamer plugins bad
 #
-RUN wget https://libnice.freedesktop.org/releases/libnice-0.1.17.tar.gz
-RUN tar xzf libnice-0.1.17.tar.gz && cd libnice-0.1.17 && ./configure --prefix=/usr --with-gstreamer && make -j4 install
+#RUN wget https://libnice.freedesktop.org/releases/libnice-0.1.17.tar.gz
+#RUN tar xzf libnice-0.1.17.tar.gz && cd libnice-0.1.17 && ./configure --prefix=/usr --with-gstreamer && make -j4 install
 
 #
 # Build lksctp
 #
-RUN git clone git://github.com/sctp/lksctp-tools.git
-RUN cd lksctp-tools && git checkout lksctp-tools-1.0.17
-RUN cd lksctp-tools && ./bootstrap
+#RUN git clone git://github.com/sctp/lksctp-tools.git
+#RUN cd lksctp-tools && git checkout lksctp-tools-1.0.17
+#RUN cd lksctp-tools && ./bootstrap
 
 #
 # Build OpenCV (after we've built GStreamer so it gets detected
 #
-RUN cd ~ && git clone https://github.com/Itseez/opencv.git
-RUN cd ~ && cd opencv && git checkout 4.4.0
-RUN cd ~ && git clone https://github.com/opencv/opencv_contrib.git
-RUN cd ~ && cd opencv_contrib && git checkout 4.4.0
-RUN cd ~ && cd opencv && mkdir build && cd build && cmake -DOPENCV_EXTRA_MODULES_PATH=~/opencv_contrib/modules \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_INSTALL_PREFIX=/usr \
-            -D ENABLE_NEON=ON \
-            -D ENABLE_VFPV3=ON \
-            -D BUILD_TESTS=OFF \
-            -D INSTALL_PYTHON_EXAMPLES=OFF \
-            -D BUILD_EXAMPLES=OFF .. \
-         && make \
-         && make install \
-         && ldconfig
+#RUN cd ~ && git clone https://github.com/Itseez/opencv.git
+#RUN cd ~ && cd opencv && git checkout 4.4.0
+#RUN cd ~ && git clone https://github.com/opencv/opencv_contrib.git
+#RUN cd ~ && cd opencv_contrib && git checkout 4.4.0
+#RUN cd ~ && cd opencv && mkdir build && cd build && cmake -DOPENCV_EXTRA_MODULES_PATH=~/opencv_contrib/modules \
+#            -DCMAKE_BUILD_TYPE=Release \
+#            -DCMAKE_INSTALL_PREFIX=/usr \
+#            -D ENABLE_NEON=ON \
+#            -D ENABLE_VFPV3=ON \
+#            -D BUILD_TESTS=OFF \
+#            -D INSTALL_PYTHON_EXAMPLES=OFF \
+#            -D BUILD_EXAMPLES=OFF .. \
+#         && make \
+#         && make install \
+#         && ldconfig
 
 #
 # Gstreamer-plugins-bad
 #
-RUN cd gst-plugins-bad && meson build && ninja -C build install
+#RUN cd gst-plugins-bad && meson build && ninja -C build install
 
 # CAN'T WORK OUT HOW TO BUILD THIS ??
 
-# GStreamer OMX support
-#CFLAGS='-I/opt/vc/include -I/opt/vc/include/IL -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux -I/opt/vc/include/IL' \
-#CPPFLAGS='-I/opt/vc/include -I/opt/vc/include/IL -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux -I/opt/vc/include/IL' \
-
-#RUN cd gst-omx && export LDFLAGS='-L/opt/vc/lib' \
-#&& CFLAGS='-I/opt/vc/include -I/opt/vc/include/IL -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux' \
-#&& CPPFLAGS='-I/opt/vc/include -I/opt/vc/include/IL -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux' \
-#&& meson -Dtarget=rpi Dc_args='-I/opt/vc/include,-I/opt/vc/include/IL,-I/opt/vc/include/interface/vcos/pthreads,-I/opt/vc/include/interface/vmcs_host/linux' configure --prefix=/usr \
-#&& meson -Dtarget=rpi compile \
-#RUN cd gst-omx && ln /opt/vc/include/IL/OMX_Broadcom.h omx/OMX_Broadcom.h -s
-
-#RUN cd gst-omx && touch omx/OMX_Broadcom.h
-#RUN cd gst-omx && meson -Dtarget=rpi build && ninja -C build install
-
-#&& make CFLAGS+='-Wno-error -Wno-redundant-decls' LDFLAGS+='-L/opt/vc/lib' -j4 \
-#&& sudo make install
+## GStreamer OMX support
+##CFLAGS='-I/opt/vc/include -I/opt/vc/include/IL -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux -I/opt/vc/include/IL' \
+##CPPFLAGS='-I/opt/vc/include -I/opt/vc/include/IL -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux -I/opt/vc/include/IL' \
+#
+##RUN cd gst-omx && export LDFLAGS='-L/opt/vc/lib' \
+##&& CFLAGS='-I/opt/vc/include -I/opt/vc/include/IL -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux' \
+##&& CPPFLAGS='-I/opt/vc/include -I/opt/vc/include/IL -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux' \
+##&& meson -Dtarget=rpi Dc_args='-I/opt/vc/include,-I/opt/vc/include/IL,-I/opt/vc/include/interface/vcos/pthreads,-I/opt/vc/include/interface/vmcs_host/linux' configure --prefix=/usr \
+##&& meson -Dtarget=rpi compile \
+##RUN cd gst-omx && ln /opt/vc/include/IL/OMX_Broadcom.h omx/OMX_Broadcom.h -s
+#
+##RUN cd gst-omx && touch omx/OMX_Broadcom.h
+##RUN cd gst-omx && meson -Dtarget=rpi build && ninja -C build install
+#
+##&& make CFLAGS+='-Wno-error -Wno-redundant-decls' LDFLAGS+='-L/opt/vc/lib' -j4 \
+##&& sudo make install
 
 #
 # GStreamer  gst-rpicamsrc
 #
-RUN git clone https://github.com/thaytan/gst-rpicamsrc.git
-RUN cd gst-rpicamsrc && ./autogen.sh --prefix=/usr && make && make install
+#RUN git clone https://github.com/thaytan/gst-rpicamsrc.git
+#RUN cd gst-rpicamsrc && ./autogen.sh --prefix=/usr && make && make install
 
 #
 # Build FFMPEG
 #
-RUN cd ~ \
-    && git clone git://source.ffmpeg.org/ffmpeg.git ffmpeg 
-RUN cd ~/ffmpeg \
-    && ./configure --enable-libfreetype --enable-gpl --enable-nonfree --enable-libx264 --enable-libass \
-                  --enable-libmp3lame --prefix=/usr --enable-omx --enable-omx-rpi --enable-indev=alsa --enable-outdev=alsa --extra-ldflags="-latomic" \
+RUN git clone git://source.ffmpeg.org/ffmpeg.git ffmpeg 
+RUN cd ffmpeg \
+    && mkdir build \
+    && ./configure --prefix=/build --enable-libfreetype --enable-gpl --enable-libx264 --enable-libass \
+                  --enable-libmp3lame --prefix=build --enable-omx --enable-omx-rpi --enable-indev=alsa --enable-outdev=alsa --extra-ldflags="-latomic" \
     && make && make install
 
 #
 # Install Jupyter
 #
-RUN python3 -m pip install jupyter
+#RUN python3 -m pip install jupyter
 
-#
-# Cleanup build
-#
-RUN rm -Rf gst-omx gst-plugins-bad gst-plugins-base gst-plugins-good gst-plugins-ugly gst-rpicamsrc gstreamer libnice* lksctp-tools openh264
-RUN ls
+RUN ls ffmpeg/build
 
 RUN [ "cross-build-end" ]  
 
+FROM resin/raspberrypi3-debian:buster
+
+RUN [ "cross-build-start" ]
+
+WORKDIR /beemon
+
+# Copy across ffmpeg files
+COPY --from=build /src/ffmpeg/build/ /usr/
+
+#RUN chmod +x launcher.sh
+#CMD ["./launcher.sh"]
+
+RUN [ "cross-build-end" ]  
