@@ -51,11 +51,13 @@ RUN cp -rpf /build/* /usr
 
 # GStreamer plugins { base, good }
 RUN export LD_LIBRARY_PATH=/usr/lib:/opt/vc/lib \
-    && export LDFLAGS='-L/opt/vc/lib' && cd gst-plugins-base \
+    && export LDFLAGS='-L/opt/vc/lib' \
     && export CFLAGS='-I/opt/vc/include -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux/' \
+    && cd gst-plugins-base \
     && meson setup . build \
     && meson configure build \
-    -Dprefix=/build -Dtests=disabled -Dexamples=disabled -Ddoc=disabled -Dbenchmarks=disabled -Dcheck=disabled -Dintrospection=disabled \
+    -Dprefix=/build -Dtests=disabled -Dexamples=disabled -Ddoc=disabled -Dintrospection=disabled \
+    -Dgl_api=gles2 -Dgl_platform=egl -Dgl_winsys=dispmanx -Dgles2_module_name=/opt/vc/lib/libbrcmGLESv2.so -Degl_module_name=/opt/vc/lib/libbrcmEGL.so \
     && meson configure build \
     && ninja -C build -j4 install
 
@@ -145,7 +147,7 @@ RUN cd gst-plugins-bad && meson setup . build \
 
 RUN export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/opt/vc/lib/pkgconfig \
     && cd gst-omx && meson setup . build -Dtarget=rpi \
-    && meson configure build  -Dprefix=/build -Dgtk-doc=disabled -Dtarget=rpi -Dheader_path=/opt/vc/include/IL -Ddoc=disabled -Dexamples=disabled \
+    && meson configure build  -Dprefix=/build -Dtarget=rpi meson build/ -Domx=enabled -Dheader_path=/opt/vc/include/IL -Ddoc=disabled -Dexamples=disabled \
     && meson configure build \
     && ninja -C build -j4 install
 
@@ -175,7 +177,8 @@ RUN [ "cross-build-start" ]
 WORKDIR /beemon
 
 # Install standard ffmpeg
-RUN apk add ffmpeg gstreamer libpulse raspberrypi raspberrypi-libs libsoup libnice lksctp-tools rtmpdump libsrtp openssl vo-aacenc alsa-utils libgudev wayland pango cairo-gobject directfb gtk+3.0 mesa-egl
+RUN apk add ffmpeg gstreamer libpulse raspberrypi raspberrypi-libs libsoup libnice lksctp-tools rtmpdump libsrtp openssl \
+    vo-aacenc alsa-utils libgudev wayland pango cairo-gobject directfb gtk+3.0 mesa-egl mesa-gl
 
 # Copy across new ffmpeg files
 COPY --from=build /src/ffmpeg/build/ /usr/
